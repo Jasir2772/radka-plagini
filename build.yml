@@ -1,0 +1,50 @@
+name: Build RadiationZone Plugin
+
+on:
+  push:
+    branches: [ "main", "master" ]
+  pull_request:
+    branches: [ "main", "master" ]
+  workflow_dispatch: {}   # GitHub saytida/ilovasida "Run workflow" tugmasi bilan ham qo'lda ishga tushirish mumkin
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Kodni olish (checkout)
+        uses: actions/checkout@v4
+
+      - name: Zip faylni avtomatik ochish (agar mavjud bo'lsa)
+        run: |
+          if [ -f "radiation-plugin.zip" ]; then
+            echo "radiation-plugin.zip topildi, ochilmoqda..."
+            unzip -o radiation-plugin.zip -d _extracted
+            # zip ichida "radiation-plugin" nomli papka bo'lsa, ichidagilarni tashqariga chiqaramiz
+            if [ -d "_extracted/radiation-plugin" ]; then
+              cp -rn _extracted/radiation-plugin/. .
+            else
+              cp -rn _extracted/. .
+            fi
+            rm -rf _extracted
+            echo "Ochildi. Repo tarkibi:"
+            ls -la
+          else
+            echo "radiation-plugin.zip topilmadi, davom etilmoqda..."
+          fi
+
+      - name: Java 17 o'rnatish
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'temurin'
+          java-version: '17'
+          cache: 'maven'
+
+      - name: Maven bilan build qilish
+        run: mvn -B clean package --file pom.xml
+
+      - name: Tayyor .jar faylni artifact sifatida yuklash
+        uses: actions/upload-artifact@v4
+        with:
+          name: RadiationZone-jar
+          path: target/*.jar
+          if-no-files-found: error
