@@ -15,7 +15,7 @@ jobs:
         run: |
           ZIP=$(ls -1 *.zip 2>/dev/null | head -n1 || true)
           if [ -z "$ZIP" ]; then
-            echo "::error::Repo ildizida .zip fayl topilmadi. Sinf6Darslar.zip ni repoga yuklang."
+            echo "::error::Repo ildizida .zip fayl topilmadi."
             exit 1
           fi
           echo "Zip: $ZIP"
@@ -23,7 +23,7 @@ jobs:
           unzip -q "$ZIP" -d work
           SETTINGS=$(find work -maxdepth 3 -name settings.gradle | head -n1)
           if [ -z "$SETTINGS" ]; then
-            echo "::error::Zip ichida settings.gradle topilmadi (noto'g'ri zip?)."
+            echo "::error::Zip ichida settings.gradle topilmadi."
             exit 1
           fi
           echo "PROJECT_DIR=$(dirname "$SETTINGS")" >> "$GITHUB_ENV"
@@ -33,7 +33,14 @@ jobs:
           distribution: temurin
           java-version: '17'
 
-      - uses: android-actions/setup-android@v3
+      - name: Prepare Android SDK
+        run: |
+          set +o pipefail
+          echo "ANDROID_HOME=$ANDROID_HOME"
+          SDKM=$(ls "$ANDROID_HOME"/cmdline-tools/*/bin/sdkmanager | head -n1)
+          echo "sdkmanager: $SDKM"
+          yes | "$SDKM" --licenses > /dev/null || true
+          "$SDKM" "platforms;android-34" "build-tools;34.0.0"
 
       - uses: gradle/actions/setup-gradle@v4
         with:
